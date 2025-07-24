@@ -54,18 +54,24 @@ function App() {
           {media.map((item) => (
             <div key={item._id} className="media-card">
               <img
-                src={item.imageUrl}
-                alt={item.title}
+                src={item.hd_url}
+                alt={item.title || item.code}
                 className="media-image"
                 onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/300x200?text=图片加载失败';
+                  // 如果高清图片加载失败，尝试原始图片
+                  if (e.target.src !== item.origin_url) {
+                    e.target.src = item.origin_url;
+                  } else {
+                    e.target.src = 'https://via.placeholder.com/300x200?text=图片加载失败';
+                  }
                 }}
               />
               <div className="media-content">
-                <h3 className="media-title">{item.title}</h3>
+                <h3 className="media-title">{item.title || item.code}</h3>
                 {item.description && (
                   <p className="media-description">{item.description}</p>
                 )}
+                <p className="media-code">代码: {item.code}</p>
               </div>
             </div>
           ))}
