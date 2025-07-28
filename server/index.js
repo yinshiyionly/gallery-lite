@@ -25,13 +25,38 @@ const mediaSchema = new mongoose.Schema({
 
 const Media = mongoose.model('hd_cover', mediaSchema);
 
-// API 路由
-app.get('/api/media', async (_req, res) => {
+// API 路由 - 支持分页
+app.get('/api/media', async (req, res) => {
   try {
-    const media = await Media.find().sort({ createdAt: -1 });
-    console.log(media)
-    res.json(media);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    console.log(`请求分页: Page ${page}, Skip ${skip}, Limit ${limit}`);
+
+    // 获取总数和分页数据，使用更稳定的排序
+    const [media, total] = await Promise.all([
+      Media.find()
+        .sort({ _id: -1 }) // 使用 _id 排序，更稳定
+        .skip(skip)
+        .limit(limit),
+      Media.countDocuments()
+    ]);
+
+    // 调试信息：显示返回的数据ID
+    const mediaIds = media.map(item => item._id.toString().slice(-6));
+    console.log(`返回数据: Page ${page}, Total ${total}, Returned ${media.length}, IDs: [${mediaIds.join(', ')}]`);
+
+    res.json({
+      media,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasMore: skip + media.length < total
+    });
   } catch (error) {
+    console.error('分页查询错误:', error);
     res.status(500).json({ error: error.message });
   }
 });
